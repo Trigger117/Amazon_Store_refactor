@@ -19,6 +19,8 @@ public class Articoli implements java.io.Serializable  {
    @JsonIgnore
     private Integer id;
 
+
+
     @Column(name = "nomeArticolo", nullable = false)
     private String nomeArticolo;
     @Column(name = "prezzo", nullable = false, precision = 10,scale = 2)
