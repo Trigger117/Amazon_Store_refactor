@@ -138,102 +138,6 @@ public class OrdineServiceImpl implements OrdineService {
             throw new HttpEntityException("Articolo non presente in giacenza= (" + articoliOpt.get().getNome_Articolo() + ")", HttpStatus.NOT_FOUND);
         }
 
-        for (ArticoliOrdine articoli : ordine.getArticoliOrdine()) {
-
-            if(articoli!=null)
-
-            if (articoli.getArticolo().getNome_Articolo().equals(ordineUpdate.getNomeArticolo())) {
-                if (ordineUpdate.getQuantità() == articoli.getQuantità()) {
-                    articoli.setQuantità(ordineUpdate.getQuantità());
-                }
-
-
-                if (ordineUpdate.getQuantità() == 0) {
-                    ordine.sottraiTotale(articoliOpt.get().getPrezzo(), articoli.getQuantità());
-                    giacenzaArticolo.get().setGiacenza(articoli.getQuantità() + giacenzaArticolo.get().getGiacenza());
-                    magazzinoRepository.save(giacenzaArticolo.get());
-                    articoliOrdineRepository.delete(articoli);
-                    ordineRepository.saveAndFlush(ordine);
-                    break;
-                } else if (ordineUpdate.getQuantità() > articoli.getQuantità()) {
-
-                    if ((giacenzaArticolo.get().getGiacenza() - differenza(ordineUpdate.getQuantità(), articoli.getQuantità())) > 0) {
-                        giacenzaArticolo.get().setGiacenza(giacenzaArticolo.get().getGiacenza() - differenza(ordineUpdate.getQuantità(), articoli.getQuantità()));
-                        magazzinoRepository.save(giacenzaArticolo.get());
-                        ordine.sommaTotale(articoliOpt.get().getPrezzo(), differenza(ordineUpdate.getQuantità(), articoli.getQuantità()));
-                        articoli.setQuantità(ordineUpdate.getQuantità());
-                        articoliOrdineRepository.save(checker(ordine, ordineUpdate));
-                        ordineRepository.saveAndFlush(ordine);
-                        break;
-                    } else {
-                        throw new HttpEntityException("Giacenza non sufficiente = (" + giacenzaArticolo.get().getGiacenza() + ")", HttpStatus.CONFLICT);
-                    }
-                } else {
-                    if (ordineUpdate.getQuantità() < articoli.getQuantità()) {
-
-                        giacenzaArticolo.get().setGiacenza(giacenzaArticolo.get().getGiacenza() + differenza(ordineUpdate.getQuantità(), articoli.getQuantità()));
-                        magazzinoRepository.save(giacenzaArticolo.get());
-                        ordine.sottraiTotale(articoliOpt.get().getPrezzo(), differenza(ordineUpdate.getQuantità(), articoli.getQuantità()));
-                        articoli.setQuantità(ordineUpdate.getQuantità());
-                        articoliOrdineRepository.save(checker(ordine, ordineUpdate));
-                        ordineRepository.saveAndFlush(ordine);
-                        break;
-                    }
-                }
-            } else {
-                // CASO 2 SE L'ARTICOLO NON è CONTENUTO AGGIUNGERLO
-                if ((giacenzaArticolo.get().getGiacenza() - ordineUpdate.getQuantità()) > 0) {
-                    giacenzaArticolo.get().setGiacenza(giacenzaArticolo.get().getGiacenza() - ordineUpdate.getQuantità());
-                    magazzinoRepository.save(giacenzaArticolo.get());
-                    Articoli articolo = articoliOpt.get();
-                    ArticoliOrdine newArticoloOrdine = new ArticoliOrdine(articolo, ordine, ordineUpdate.getQuantità());
-                    articoliOrdineRepository.save(newArticoloOrdine);
-                    ordine.sommaTotale(articoliOpt.get().getPrezzo(), ordineUpdate.getQuantità());
-                    ordineRepository.saveAndFlush(ordine);
-break;
-                } else {
-                    throw new HttpEntityException("Giacenza non sufficiente = (" + giacenzaArticolo.get().getGiacenza() + ")", HttpStatus.CONFLICT);
-                }
-            }
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-   /* @Transactional
-    @Override
-    public void updateOrdine(OrdineUpdateModel ordineUpdate) {
-        Optional<Ordine> ordineOpt = ordineRepository.findByCodiceOrdine(ordineUpdate.getCodiceOrdine());
-        if (!ordineOpt.isPresent()) {
-            throw new HttpEntityException("Nessun ordine trovato con codiceOrdine = [" + ordineUpdate.getCodiceOrdine() + "]", HttpStatus.NOT_FOUND);
-        }
-        Ordine ordine = ordineOpt.get();
-
-        ArticoliOrdinePKId idArticolo= new ArticoliOrdinePKId();
-
-
-
-        Optional<ArticoliOrdine> articoliOrdOtp = articoliOrdineRepository.findByIdAndId(ordineUpdate.getIdOrdine(),idArticolo );
-        if (!articoliOrdOtp.isPresent()) {
-            throw new HttpEntityException("Nessun ordine trovato con questo id : " + ordineUpdate.getIdOrdine(), HttpStatus.NOT_FOUND);//
-        }
-
-        Optional<Articoli> articoliOpt = articoloRepository.findByNomeArticolo(articoliOrdOtp.get().getArticolo().getNome_Articolo());
-        if (!articoliOpt.isPresent()) {
-            throw new HttpEntityException("Nessun articolo trovato con nome: " + ordineUpdate.getNomeArticolo(), HttpStatus.NOT_FOUND);//
-        }
-        Optional<Magazzino> giacenzaArticolo = magazzinoRepository.findByNomeArticolo(articoliOpt.get().getNome_Articolo());
-        if (!giacenzaArticolo.isPresent()) {
-            throw new HttpEntityException("Articolo non presente in giacenza= (" + articoliOpt.get().getNome_Articolo() + ")", HttpStatus.NOT_FOUND);
-        }
-
         if (checker(ordine, ordineUpdate) != null) {
 
             if (ordineUpdate.getQuantità() == 0) {
@@ -242,6 +146,7 @@ break;
                 magazzinoRepository.save(giacenzaArticolo.get());
                 articoliOrdineRepository.delete(checker(ordine, ordineUpdate));
                 ordineRepository.saveAndFlush(ordine);
+
             } else if (ordineUpdate.getQuantità() > checker(ordine, ordineUpdate).getQuantità()) {
 
                 if ((giacenzaArticolo.get().getGiacenza() - differenza(ordineUpdate.getQuantità(), checker(ordine, ordineUpdate).getQuantità())) > 0) {
@@ -251,6 +156,7 @@ break;
                     checker(ordine, ordineUpdate).setQuantità(ordineUpdate.getQuantità());
                     articoliOrdineRepository.save(checker(ordine, ordineUpdate));
                     ordineRepository.saveAndFlush(ordine);
+
                 } else {
                     throw new HttpEntityException("Giacenza non sufficiente = (" + giacenzaArticolo.get().getGiacenza() + ")", HttpStatus.CONFLICT);
                 }
@@ -263,6 +169,7 @@ break;
                     checker(ordine, ordineUpdate).setQuantità(ordineUpdate.getQuantità());
                     articoliOrdineRepository.save(checker(ordine, ordineUpdate));
                     ordineRepository.saveAndFlush(ordine);
+
                 }
             }
         } else {
@@ -280,7 +187,7 @@ break;
                 throw new HttpEntityException("Giacenza non sufficiente = (" + giacenzaArticolo.get().getGiacenza() + ")", HttpStatus.CONFLICT);
             }
         }
-    }*/
+    }
 
     @Override
     public PaginationResponse findAllOrdini(Integer offset, Integer limit) {
@@ -290,7 +197,6 @@ break;
         PaginationResponse response = paginationUtility.buildPaginatinatedResponse(ordine.stream().skip(offset).limit(limit).collect(Collectors.toList()), offset, (offset + limit), ordine.size(), "Ordini");
         return response;
     }
-
 
     @Override
     public List<Ordine> findAllByUsernameOrderByDateAsc(String username) {
@@ -320,9 +226,9 @@ break;
 
     public ArticoliOrdine checker(Ordine articoliOrdine, OrdineUpdateModel ordineUpdate) {
 
-        for (ArticoliOrdine articoloOrdine : articoliOrdine.getArticoliOrdine()) {
-            if (ordineUpdate.getNomeArticolo().equals(articoloOrdine.getArticolo().getNome_Articolo())) {
-                return articoloOrdine;
+        for (ArticoliOrdine articoli : articoliOrdine.getArticoliOrdine()) {
+            if (articoli.getArticolo().getNome_Articolo().equals(ordineUpdate.getNomeArticolo())) {
+                return articoli;
             }
         }
         return null;
